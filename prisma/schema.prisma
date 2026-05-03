@@ -1,0 +1,218 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════
+// ENUMS
+// ═══════════════════════════════════════
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum Langue {
+  FR
+  EN
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum PlanStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  ARCHIVED
+}
+
+enum EventType {
+  VIEW
+  BOOST
+  FAVORITE
+  SHARE
+  COMMENT
+}
+
+enum ReportReason {
+  SPAM
+  CONTENU_INAPPROPRIE
+  FAUSSE_INFO
+  AUTRE
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+// ═══════════════════════════════════════
+// MODELS
+// ═══════════════════════════════════════
+model User {
+  id        String   @id @default(uuid())
+  clerkId   String   @unique @map("clerk_id")
+  nom       String   @db.VarChar(80)
+  email     String   @unique @db.VarChar(255)
+  avatarUrl String?  @map("avatar_url")
+  role      Role     @default(USER)
+  langue    Langue   @default(FR)
+  theme     Theme    @default(SYSTEM)
+  ville     String?  @db.VarChar(80)
+  pushToken String?  @map("push_token")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  plans     Plan[]
+  boosts    Boost[]
+  favorites Favorite[]
+  comments  Comment[]
+  interests UserInterest[]
+  events    UserEvent[]
+  reports   Report[]
+
+  @@map("users")
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  nomFr     String   @db.VarChar(60) @map("nom_fr")
+  nomEn     String   @db.VarChar(60) @map("nom_en")
+  slug      String   @unique @db.VarChar(60)
+  icone     String   @db.VarChar(40)
+  couleur   String   @db.VarChar(7)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  plans     Plan[]
+  interests UserInterest[]
+
+  @@map("categories")
+}
+
+model Plan {
+  id            String     @id @default(uuid())
+  userId        String     @map("user_id")
+  categorieId   String     @map("categorie_id")
+  titre         String     @db.VarChar(120)
+  description   String
+  ville         String     @db.VarChar(80)
+  imageUrl      String?    @map("image_url")
+  boostsCount   Int        @default(0) @map("boosts_count")
+  commentsCount Int        @default(0) @map("comments_count")
+  sharesCount   Int        @default(0) @map("shares_count")
+  status        PlanStatus @default(PENDING)
+  isFeatured    Boolean    @default(false) @map("is_featured")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categorie Category @relation(fields: [categorieId], references: [id])
+  
+  boosts    Boost[]
+  favorites Favorite[]
+  comments  Comment[]
+  reports   Report[]
+  events    UserEvent[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([userId])
+  @@index([categorieId])
+  @@index([ville])
+  @@map("plans")
+}
+
+model Boost {
+  id        String   @id @default(uuid())
+  planId    String   @map("plan_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, userId])
+  @@map("boosts")
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  planId    String   @map("plan_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, planId])
+  @@map("favorites")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  planId    String   @map("plan_id")
+  userId    String   @map("user_id")
+  parentId  String?  @map("parent_id")
+  contenu   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  plan   Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  
+  replies Comment[] @relation("CommentReplies")
+
+  @@index([planId])
+  @@map("comments")
+}
+
+model UserInterest {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  categorieId String   @map("categorie_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categorie Category @relation(fields: [categorieId], references: [id])
+
+  @@unique([userId, categorieId])
+  @@map("user_interests")
+}
+
+model UserEvent {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  planId          String    @map("plan_id")
+  eventType       EventType @map("event_type")
+  durationSeconds Int?      @map("duration_seconds")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([userId, eventType])
+  @@index([planId])
+  @@map("user_events")
+}
+
+model Report {
+  id        String       @id @default(uuid())
+  planId    String       @map("plan_id")
+  userId    String       @map("user_id")
+  raison    ReportReason
+  statut    ReportStatus @default(PENDING)
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
