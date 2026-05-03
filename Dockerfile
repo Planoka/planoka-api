@@ -1,4 +1,4 @@
-# ─── Stage 1: Build ───────────────────────────────────────────────────────────
+# ─── Étape de Build ───────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 
 WORKDIR /app
@@ -7,33 +7,38 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Installer TOUTES les dépendances (y compris dev pour Nest CLI et Prisma)
+# Installer TOUTES les dépendances (nécessaire pour avoir @nestjs/cli pour le build)
 RUN npm install --legacy-peer-deps
 
-# Copier le reste du code source
+# Générer le client Prisma
+RUN npx prisma generate
+
+# Copier le reste du code
 COPY . .
 
-# Générer le build NestJS
+# Compiler l'application NestJS
 RUN npm run build
 
-# ─── Stage 2: Production ──────────────────────────────────────────────────────
+# ─── Étape de Production ──────────────────────────────────────────────────────
 FROM node:20-alpine AS production
 
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copier les dépendances et le schéma Prisma
+# Copier les dépendances et le schéma
 COPY package*.json ./
 COPY prisma ./prisma/
 
 # Installer UNIQUEMENT les dépendances de production
 RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
 
-# Copier les fichiers compilés depuis l'étape de build
+# Copier le build et le client Prisma généré depuis l'étape précédente
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
 
-# Démarrage de l'application avec Prisma db push
+# Le script start:prod contient déjà "npx prisma db push && node dist/main"
 CMD ["npm", "run", "start:prod"]
