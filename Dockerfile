@@ -8,7 +8,7 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Installer TOUTES les dépendances (y compris dev pour Nest CLI et Prisma)
-RUN npm ci
+RUN npm install --legacy-peer-deps
 
 # Copier le reste du code source
 COPY . .
@@ -28,7 +28,7 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Installer UNIQUEMENT les dépendances de production
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --omit=dev --legacy-peer-deps && npm cache clean --force
 
 # Copier les fichiers compilés depuis l'étape de build
 COPY --from=builder /app/dist ./dist
