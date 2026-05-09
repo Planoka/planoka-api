@@ -105,7 +105,8 @@ model Plan {
   titre         String     @db.VarChar(120)
   description   String
   ville         String     @db.VarChar(80)
-  imageUrl      String?    @map("image_url")
+  images        String[]   @default([])
+  videoUrl      String?    @map("video_url")
   boostsCount   Int        @default(0) @map("boosts_count")
   commentsCount Int        @default(0) @map("comments_count")
   sharesCount   Int        @default(0) @map("shares_count")
@@ -208,6 +209,7 @@ model Report {
   planId    String       @map("plan_id")
   userId    String       @map("user_id")
   raison    ReportReason
+  description String?
   statut    ReportStatus @default(PENDING)
   createdAt DateTime     @default(now()) @map("created_at")
 
