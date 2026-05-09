@@ -5,13 +5,7 @@ import { Readable } from 'stream';
 @Injectable()
 export class MediaService {
   constructor() {
-    // La configuration Cloudinary se base sur les variables d'environnement
-    // CLOUDINARY_URL ou CLOUDINARY_CLOUD_NAME, etc.
-    cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
-    });
+    // Le SDK Cloudinary détecte automatiquement la variable d'environnement CLOUDINARY_URL
   }
 
   async uploadMedia(file: Express.Multer.File): Promise<string> {
