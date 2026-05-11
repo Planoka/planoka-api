@@ -7,7 +7,12 @@ import { UpdatePlanDto } from './dto/update-plan.dto';
 export class PlansService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(query: { page?: number; limit?: number; categoryId?: string; ville?: string }) {
+  async findAll(query: {
+    page?: number;
+    limit?: number;
+    categoryId?: string;
+    ville?: string;
+  }) {
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
     const skip = (page - 1) * limit;

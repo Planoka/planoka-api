@@ -84,7 +84,7 @@ model User {
 }
 
 model Category {
-  id        String   @id @default(uuid())
+  id        String   @id @default(uuid()) @default(autoincrement())
   nomFr     String   @db.VarChar(60) @map("nom_fr")
   nomEn     String   @db.VarChar(60) @map("nom_en")
   slug      String   @unique @db.VarChar(60)
