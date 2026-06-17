@@ -1,7 +1,10 @@
 import { Controller, Post, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MediaService } from './media.service';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('media')
+@ApiBearerAuth('Clerk JWT')
 @Controller('upload')
 export class MediaController {
   constructor(private readonly mediaService: MediaService) {}

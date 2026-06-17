@@ -4,7 +4,10 @@ import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { Public } from '../auth/roles.decorator';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('plans')
+@ApiBearerAuth('Clerk JWT')
 @Controller('plans')
 export class PlansController {
   constructor(private readonly plansService: PlansService) {}

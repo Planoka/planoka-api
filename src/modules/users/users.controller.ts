@@ -4,10 +4,18 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { Public } from '../auth/roles.decorator';
 import { SetInterestsDto } from './dto/set-interests.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('users')
+@ApiBearerAuth('Clerk JWT')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get('me')
+  getMyProfile(@CurrentUser() user: { clerkId: string }) {
+    return this.usersService.getMyProfile(user.clerkId);
+  }
 
   @Patch('me')
   updateProfile(

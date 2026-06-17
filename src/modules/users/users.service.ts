@@ -6,6 +6,18 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
+  async getMyProfile(clerkId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { clerkId },
+      include: {
+        interests: { include: { categorie: true } },
+        _count: { select: { plans: true, favorites: true, boosts: true } },
+      },
+    });
+    if (!user) throw new NotFoundException('Utilisateur introuvable');
+    return user;
+  }
+
   async updateProfile(clerkId: string, dto: UpdateUserDto) {
     const user = await this.prisma.user.findUnique({ where: { clerkId } });
     if (!user) throw new NotFoundException('Utilisateur introuvable');

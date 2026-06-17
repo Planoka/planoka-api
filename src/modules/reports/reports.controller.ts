@@ -2,7 +2,10 @@ import { Controller, Post, Body, Param } from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('reports')
+@ApiBearerAuth('Clerk JWT')
 @Controller('plans/:id/report')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}

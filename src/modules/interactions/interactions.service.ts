@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class InteractionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
   /**
    * Ajoute ou retire un plan des favoris (Toggle)
@@ -40,7 +44,10 @@ export class InteractionsService {
     const user = await this.prisma.user.findUnique({ where: { clerkId } });
     if (!user) throw new NotFoundException('Utilisateur introuvable');
 
-    const plan = await this.prisma.plan.findUnique({ where: { id: planId } });
+    const plan = await this.prisma.plan.findUnique({
+      where: { id: planId },
+      include: { user: true },
+    });
     if (!plan) throw new NotFoundException('Plan introuvable');
 
     const existing = await this.prisma.boost.findUnique({
@@ -64,6 +71,20 @@ export class InteractionsService {
           data: { boostsCount: { increment: 1 } },
         }),
       ]);
+
+      // Envoyer une notification push au propriétaire du plan si ce n'est pas lui-même
+      if (plan.userId !== user.id) {
+        const planOwner = plan.user;
+        if (planOwner.pushToken) {
+          await this.notifications.sendPushNotification(
+            planOwner.pushToken,
+            'Nouveau Boost ! 🚀',
+            `${user.nom} a boosté votre plan "${plan.titre}"`,
+            { planId: plan.id },
+          );
+        }
+      }
+
       return { boosted: true };
     }
   }

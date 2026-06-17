@@ -3,10 +3,11 @@ import { APP_GUARD } from '@nestjs/core';
 import { ClerkGuard } from './clerk.guard';
 import { RolesGuard } from './roles.guard';
 import { AuthController } from './auth.controller';
+import { WebhooksController } from './webhooks.controller';
 
 @Global()
 @Module({
-  controllers: [AuthController],
+  controllers: [AuthController, WebhooksController],
   providers: [
     {
       provide: APP_GUARD,

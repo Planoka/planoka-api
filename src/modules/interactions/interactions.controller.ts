@@ -2,7 +2,10 @@ import { Controller, Post, Param } from '@nestjs/common';
 import { InteractionsService } from './interactions.service';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { Public } from '../auth/roles.decorator';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('interactions')
+@ApiBearerAuth('Clerk JWT')
 @Controller('plans/:id')
 export class InteractionsController {
   constructor(private readonly interactionsService: InteractionsService) {}
