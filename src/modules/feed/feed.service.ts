@@ -36,7 +36,7 @@ export class FeedService {
       where: { status: 'ACTIVE', createdAt: { gte: since30d } },
       take: 100,
       include: {
-        categorie: true,
+        categories: true,
         user: { select: { nom: true, avatarUrl: true } },
         _count: { select: { favorites: true, comments: true, boosts: true } },
       },
@@ -61,7 +61,8 @@ export class FeedService {
       );
 
       // Pertinence intérêts (0-20 pts)
-      const hasInterest = categoryIds.includes((plan as any).categorieId);
+      const planCategoryIds = (plan.categories || []).map((c: any) => c.id);
+      const hasInterest = planCategoryIds.some((id: string) => categoryIds.includes(id));
       const relevance = hasInterest ? 20 : 0;
 
       // Bonus géographique +20% si même ville
@@ -100,7 +101,7 @@ export class FeedService {
       where: { status: 'ACTIVE', createdAt: { gte: since7d } },
       take: 20,
       include: {
-        categorie: true,
+        categories: true,
         user: { select: { nom: true, avatarUrl: true } },
         _count: { select: { favorites: true, comments: true, boosts: true } },
       },

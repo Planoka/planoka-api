@@ -19,7 +19,11 @@ export class PlansService {
 
     const where: any = {};
     if (query.categoryId) {
-      where.categorieId = query.categoryId;
+      where.categories = {
+        some: {
+          id: query.categoryId,
+        },
+      };
     }
     if (query.ville) {
       where.ville = { contains: query.ville, mode: 'insensitive' };
@@ -29,7 +33,7 @@ export class PlansService {
       this.prisma.plan.findMany({
         where,
         include: {
-          categorie: true,
+          categories: true,
           user: { select: { id: true, nom: true, avatarUrl: true } },
           _count: { select: { favorites: true, comments: true, boosts: true } },
         },
@@ -66,10 +70,12 @@ export class PlansService {
         images: dto.images || [],
         videoUrl: dto.videoUrl || null,
         userId: user.id,
-        categorieId: dto.categoryId,
+        categories: {
+          connect: dto.categoryIds.map(id => ({ id })),
+        },
       },
       include: {
-        categorie: true,
+        categories: true,
         user: { select: { nom: true, avatarUrl: true } },
       },
     });
@@ -79,7 +85,7 @@ export class PlansService {
     const plan = await this.prisma.plan.findUnique({
       where: { id },
       include: {
-        categorie: true,
+        categories: true,
         user: { select: { id: true, nom: true, avatarUrl: true } },
         _count: { select: { favorites: true, comments: true, boosts: true } },
       },
@@ -104,17 +110,24 @@ export class PlansService {
       throw new BadRequestException('Un plan ne peut pas avoir à la fois des images et une vidéo');
     }
 
+    const updateData: any = {
+      titre: dto.titre,
+      description: dto.description,
+      ville: dto.ville,
+      images: dto.images,
+      videoUrl: dto.videoUrl,
+    };
+
+    if (dto.categoryIds) {
+      updateData.categories = {
+        set: dto.categoryIds.map(id => ({ id })),
+      };
+    }
+
     return this.prisma.plan.update({
       where: { id },
-      data: {
-        titre: dto.titre,
-        description: dto.description,
-        ville: dto.ville,
-        images: dto.images,
-        videoUrl: dto.videoUrl,
-        categorieId: dto.categoryId,
-      },
-      include: { categorie: true },
+      data: updateData,
+      include: { categories: true },
     });
   }
 

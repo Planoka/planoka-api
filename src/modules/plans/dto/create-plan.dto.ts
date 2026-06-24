@@ -24,7 +24,8 @@ export class CreatePlanDto {
   @IsString()
   videoUrl?: string;
 
-  @IsUUID()
+  @IsArray()
+  @IsUUID(undefined, { each: true })
   @IsNotEmpty()
-  categoryId: string;
+  categoryIds: string[];
 }

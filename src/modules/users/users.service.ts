@@ -56,7 +56,7 @@ export class UsersService {
       include: {
         plan: {
           include: {
-            categorie: true,
+            categories: true,
             user: { select: { id: true, nom: true, avatarUrl: true } }
           }
         }

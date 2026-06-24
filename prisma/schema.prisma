@@ -101,7 +101,6 @@ model Category {
 model Plan {
   id            String     @id @default(uuid())
   userId        String     @map("user_id")
-  categorieId   String     @map("categorie_id")
   titre         String     @db.VarChar(120)
   description   String
   ville         String     @db.VarChar(80)
@@ -115,8 +114,8 @@ model Plan {
   createdAt     DateTime   @default(now()) @map("created_at")
   updatedAt     DateTime   @updatedAt @map("updated_at")
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  categorie Category @relation(fields: [categorieId], references: [id])
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categories Category[] // many-to-many relationship
   
   boosts    Boost[]
   favorites Favorite[]
@@ -126,7 +125,6 @@ model Plan {
 
   @@index([status, createdAt(sort: Desc)])
   @@index([userId])
-  @@index([categorieId])
   @@index([ville])
   @@map("plans")
 }

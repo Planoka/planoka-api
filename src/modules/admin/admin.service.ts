@@ -73,7 +73,7 @@ export class AdminService {
     const [data, total] = await Promise.all([
       this.prisma.plan.findMany({
         where,
-        include: { user: { select: { nom: true, email: true } }, categorie: true },
+        include: { user: { select: { nom: true, email: true } }, categories: true },
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
