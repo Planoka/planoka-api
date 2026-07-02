@@ -1,7 +1,8 @@
-import { Controller, Post, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { MediaService } from './media.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { DeleteMediaDto } from './dto/delete-media.dto';
+import { MediaService } from './media.service';
 
 @ApiTags('media')
 @ApiBearerAuth('Clerk JWT')
@@ -21,7 +22,11 @@ export class MediaController {
       throw new BadRequestException('Le fichier doit être une image ou une vidéo');
     }
 
-    const url = await this.mediaService.uploadMedia(file);
-    return { url };
+    return this.mediaService.uploadMedia(file);
+  }
+
+  @Post('delete')
+  async deleteMedia(@Body() body: DeleteMediaDto) {
+    return this.mediaService.deleteMedia(body.publicIds);
   }
 }
