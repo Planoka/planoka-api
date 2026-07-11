@@ -5,6 +5,7 @@ import {
   RawBodyRequest,
   Req,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { createHmac, timingSafeEqual } from 'crypto';
@@ -14,6 +15,7 @@ import { Public } from '../auth/roles.decorator';
 /**
  * Vérifie la signature Svix sans dépendance externe.
  * Algorithme : HMAC-SHA256 sur "${svix-id}.${svix-timestamp}.${rawBody}"
+ * Les buffers sont comparés en binaire pour éviter les erreurs de taille avec timingSafeEqual.
  */
 function verifySvixSignature(
   rawBody: Buffer,
@@ -22,21 +24,25 @@ function verifySvixSignature(
   svixSignature: string,
   secret: string,
 ): void {
-  // Le secret Svix commence par "whsec_" — on retire ce préfixe et on décode en base64
+  // Retirer le préfixe "whsec_" et décoder en base64 → Buffer binaire
   const secretBytes = Buffer.from(secret.replace(/^whsec_/, ''), 'base64');
 
-  // Message signé = "svix-id.svix-timestamp.rawBody"
-  const toSign = `${svixId}.${svixTimestamp}.${rawBody.toString()}`;
+  // Message signé = "svix-id.svix-timestamp." + rawBody (en binaire, pas en string)
+  const prefix = Buffer.from(`${svixId}.${svixTimestamp}.`);
+  const toSign = Buffer.concat([prefix, rawBody]);
 
-  // HMAC SHA256
-  const computedHmac = createHmac('sha256', secretBytes).update(toSign).digest('base64');
+  // HMAC SHA256 → digest binaire (Buffer)
+  const computedHmacBuffer = createHmac('sha256', secretBytes).update(toSign).digest();
 
-  // La signature fournie peut contenir plusieurs valeurs séparées par des espaces (ex: "v1,xxx v1,yyy")
+  // La signature fournie peut contenir plusieurs valeurs séparées par des espaces
   const signatures = svixSignature.split(' ');
   const isValid = signatures.some((sig) => {
-    const sigValue = sig.replace(/^v1,/, '');
     try {
-      return timingSafeEqual(Buffer.from(computedHmac), Buffer.from(sigValue));
+      const sigValue = sig.replace(/^v1,/, '');
+      const sigBuffer = Buffer.from(sigValue, 'base64');
+      // timingSafeEqual requiert des buffers de même taille
+      if (computedHmacBuffer.length !== sigBuffer.length) return false;
+      return timingSafeEqual(computedHmacBuffer, sigBuffer);
     } catch {
       return false;
     }
@@ -49,6 +55,8 @@ function verifySvixSignature(
 @Public()
 @Controller('webhooks/clerk')
 export class WebhooksController {
+  private readonly logger = new Logger(WebhooksController.name);
+
   constructor(private prisma: PrismaService) {}
 
   @Post()
@@ -64,19 +72,30 @@ export class WebhooksController {
       throw new BadRequestException('Headers Svix manquants');
     }
 
-    // 1. Vérifier la signature
-    verifySvixSignature(req.rawBody as Buffer, svixId, svixTimestamp, svixSignature, secret);
+    const rawBody = req.rawBody;
+    if (!rawBody || !Buffer.isBuffer(rawBody)) {
+      throw new BadRequestException('Corps de la requête invalide ou manquant');
+    }
+
+    // 1. Vérifier la signature (comparaison binaire)
+    verifySvixSignature(rawBody, svixId, svixTimestamp, svixSignature, secret);
 
     // 2. Parser l'événement
-    const event = JSON.parse((req.rawBody as Buffer).toString());
+    const event = JSON.parse(rawBody.toString('utf8'));
     const { type, data } = event;
+
+    this.logger.log(`Clerk webhook received: ${type}`);
 
     // 3. Synchroniser l'utilisateur selon le type d'événement
     if (type === 'user.created' || type === 'user.updated') {
       const email = data.email_addresses?.[0]?.email_address;
+      if (!email) {
+        this.logger.warn(`Webhook ${type}: no email found for user ${data.id}`);
+        return { received: true };
+      }
       const firstName = data.first_name || '';
       const lastName = data.last_name || '';
-      const nom = `${firstName} ${lastName}`.trim() || 'Utilisateur';
+      const nom = `${firstName} ${lastName}`.trim() || data.username || 'Utilisateur';
       const avatarUrl = data.image_url || null;
 
       await this.prisma.user.upsert({
@@ -84,10 +103,12 @@ export class WebhooksController {
         update: { nom, email, avatarUrl },
         create: { clerkId: data.id, nom, email, avatarUrl },
       });
+      this.logger.log(`User ${type === 'user.created' ? 'created' : 'updated'}: ${email}`);
     }
 
     if (type === 'user.deleted') {
       await this.prisma.user.deleteMany({ where: { clerkId: data.id } });
+      this.logger.log(`User deleted: ${data.id}`);
     }
 
     return { received: true };

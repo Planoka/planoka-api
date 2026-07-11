@@ -39,9 +39,22 @@ export class UsersController {
     return this.usersService.setMyInterests(user.clerkId, dto.categoryIds);
   }
 
-  @Public() // Endpoint public, pas besoin de token
+  // ── Follow / Unfollow ──────────────────────────────────────────
+  @Post(':id/follow')
+  toggleFollow(
+    @CurrentUser() user: { clerkId: string },
+    @Param('id') targetUserId: string,
+  ) {
+    return this.usersService.toggleFollow(user.clerkId, targetUserId);
+  }
+
+  // Profil public — doit être en DERNIER pour ne pas écraser les routes 'me/...'
   @Get(':id')
-  getPublicProfile(@Param('id') id: string) {
-    return this.usersService.getPublicProfile(id);
+  getPublicProfile(
+    @Param('id') id: string,
+    @CurrentUser() user: { clerkId: string },
+  ) {
+    // On passe le clerkId du viewer (peut être null si non connecté, mais le guard le gère)
+    return this.usersService.getPublicProfile(id, user?.clerkId);
   }
 }

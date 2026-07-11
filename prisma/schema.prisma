@@ -80,6 +80,10 @@ model User {
   events    UserEvent[]
   reports   Report[]
 
+  // Follow relations
+  following Follow[] @relation("UserFollowing")
+  followers Follow[] @relation("UserFollowers")
+
   @@map("users")
 }
 
@@ -215,4 +219,19 @@ model Report {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("reports")
+}
+
+// ── Follow System ─────────────────────────────────────────────
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String   @map("follower_id")   // celui qui suit
+  followingId String   @map("following_id")  // celui qui est suivi
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+  @@map("follows")
 }

@@ -4,7 +4,7 @@ import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { Public } from '../auth/roles.decorator';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('plans')
 @ApiBearerAuth('Clerk JWT')
@@ -12,15 +12,25 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 export class PlansController {
   constructor(private readonly plansService: PlansService) {}
 
-  @Public() // Le feed global est public
+  @Public()
   @Get()
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'categoryId', required: false })
+  @ApiQuery({ name: 'ville', required: false })
+  @ApiQuery({ name: 'userId', required: false, description: 'Filter plans by creator (backend DB user id)' })
+  @ApiQuery({ name: 'favoritedBy', required: false, description: 'Filter plans favorited by this user id' })
+  @ApiQuery({ name: 'boostedBy', required: false, description: 'Filter plans boosted by this user id' })
   findAll(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Query('categoryId') categoryId?: string,
     @Query('ville') ville?: string,
+    @Query('userId') userId?: string,
+    @Query('favoritedBy') favoritedBy?: string,
+    @Query('boostedBy') boostedBy?: string,
   ) {
-    return this.plansService.findAll({ page, limit, categoryId, ville });
+    return this.plansService.findAll({ page, limit, categoryId, ville, userId, favoritedBy, boostedBy });
   }
 
   @Post()
@@ -31,7 +41,7 @@ export class PlansController {
     return this.plansService.create(user.clerkId, createPlanDto);
   }
 
-  @Public() // Le détail d'un plan est public
+  @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.plansService.findOne(id);

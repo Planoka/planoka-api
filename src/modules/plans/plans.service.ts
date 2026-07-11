@@ -12,21 +12,41 @@ export class PlansService {
     limit?: number;
     categoryId?: string;
     ville?: string;
+    userId?: string;
+    favoritedBy?: string;
+    boostedBy?: string;
   }) {
     const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 10;
+    const limit = Number(query.limit) || 20;
     const skip = (page - 1) * limit;
 
     const where: any = {};
+
+    // Filtre par status (on veut les ACTIVE par défaut, sauf si on filtre par user)
+    if (!query.userId && !query.favoritedBy && !query.boostedBy) {
+      where.status = 'ACTIVE';
+    }
+
     if (query.categoryId) {
-      where.categories = {
-        some: {
-          id: query.categoryId,
-        },
-      };
+      where.categories = { some: { id: query.categoryId } };
     }
     if (query.ville) {
       where.ville = { contains: query.ville, mode: 'insensitive' };
+    }
+
+    // Plans créés par un utilisateur spécifique (profil)
+    if (query.userId) {
+      where.userId = query.userId;
+    }
+
+    // Plans mis en favoris par un utilisateur
+    if (query.favoritedBy) {
+      where.favorites = { some: { userId: query.favoritedBy } };
+    }
+
+    // Plans boostés par un utilisateur
+    if (query.boostedBy) {
+      where.boosts = { some: { userId: query.boostedBy } };
     }
 
     const [data, total] = await Promise.all([
@@ -76,7 +96,7 @@ export class PlansService {
       },
       include: {
         categories: true,
-        user: { select: { nom: true, avatarUrl: true } },
+        user: { select: { id: true, nom: true, avatarUrl: true } },
       },
     });
   }
@@ -138,7 +158,6 @@ export class PlansService {
     const plan = await this.prisma.plan.findUnique({ where: { id } });
     if (!plan) throw new NotFoundException('Plan introuvable');
     
-    // Autoriser la suppression si c'est l'auteur ou un admin
     if (plan.userId !== user.id && user.role !== 'ADMIN') {
       throw new ForbiddenException('Vous n\'avez pas les droits pour supprimer ce plan');
     }
