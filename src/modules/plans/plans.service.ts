@@ -22,11 +22,6 @@ export class PlansService {
 
     const where: any = {};
 
-    // Filtre par status (on veut les ACTIVE par défaut, sauf si on filtre par user)
-    if (!query.userId && !query.favoritedBy && !query.boostedBy) {
-      where.status = 'ACTIVE';
-    }
-
     if (query.categoryId) {
       where.categories = { some: { id: query.categoryId } };
     }
