@@ -16,6 +16,7 @@ import { EventsModule } from './modules/events/events.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     ReportsModule,
     AdminModule,
     NotificationsModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],

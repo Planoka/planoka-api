@@ -21,6 +21,7 @@ export class PlansController {
   @ApiQuery({ name: 'userId', required: false, description: 'Filter plans by creator (backend DB user id)' })
   @ApiQuery({ name: 'favoritedBy', required: false, description: 'Filter plans favorited by this user id' })
   @ApiQuery({ name: 'boostedBy', required: false, description: 'Filter plans boosted by this user id' })
+  @ApiQuery({ name: 'search', required: false })
   findAll(
     @Query('page') page?: number,
     @Query('limit') limit?: number,
@@ -29,8 +30,15 @@ export class PlansController {
     @Query('userId') userId?: string,
     @Query('favoritedBy') favoritedBy?: string,
     @Query('boostedBy') boostedBy?: string,
+    @Query('search') search?: string,
   ) {
-    return this.plansService.findAll({ page, limit, categoryId, ville, userId, favoritedBy, boostedBy });
+    return this.plansService.findAll({ page, limit, categoryId, ville, userId, favoritedBy, boostedBy, search });
+  }
+
+  @Public()
+  @Get('map-search')
+  mapSearch(@Query() query: { q?: string; ville?: string; categoryId?: string; page?: number; limit?: number }) {
+    return this.plansService.mapSearch(query);
   }
 
   @Post()

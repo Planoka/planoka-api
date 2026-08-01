@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateIf, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsArray, IsUUID, IsNumber, Min, Max, IsEnum } from 'class-validator';
+import { LocationSource } from '@prisma/client';
 
 export class CreatePlanDto {
   @IsString()
@@ -12,6 +13,22 @@ export class CreatePlanDto {
   @IsString()
   @IsNotEmpty()
   ville: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  latitude?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  longitude?: number;
+
+  @IsOptional()
+  @IsEnum(LocationSource)
+  locationSource?: LocationSource;
 
   @IsArray()
   @IsOptional()

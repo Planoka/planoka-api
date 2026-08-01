@@ -34,6 +34,11 @@ enum PlanStatus {
   ARCHIVED
 }
 
+enum LocationSource {
+  GPS
+  CITY
+}
+
 enum EventType {
   VIEW
   BOOST
@@ -108,6 +113,9 @@ model Plan {
   titre         String     @db.VarChar(120)
   description   String
   ville         String     @db.VarChar(80)
+  latitude      Float?
+  longitude     Float?
+  locationSource LocationSource @default(CITY) @map("location_source")
   images        String[]   @default([])
   videoUrl      String?    @map("video_url")
   boostsCount   Int        @default(0) @map("boosts_count")
@@ -130,6 +138,7 @@ model Plan {
   @@index([status, createdAt(sort: Desc)])
   @@index([userId])
   @@index([ville])
+  @@index([latitude, longitude])
   @@map("plans")
 }
 

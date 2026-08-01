@@ -96,11 +96,12 @@ export class InteractionsService {
     const plan = await this.prisma.plan.findUnique({ where: { id: planId } });
     if (!plan) throw new NotFoundException('Plan introuvable');
 
-    await this.prisma.plan.update({
+    const updatedPlan = await this.prisma.plan.update({
       where: { id: planId },
       data: { sharesCount: { increment: 1 } },
+      select: { sharesCount: true },
     });
 
-    return { success: true };
+    return { success: true, sharesCount: updatedPlan.sharesCount };
   }
 }

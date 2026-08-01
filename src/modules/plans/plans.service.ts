@@ -7,6 +7,27 @@ import { UpdatePlanDto } from './dto/update-plan.dto';
 export class PlansService {
   constructor(private prisma: PrismaService) {}
 
+  private cityCoordinates(ville: string) {
+    const cities: Record<string, { lat: number; lng: number }> = {
+      yaounde: { lat: 3.848, lng: 11.5021 }, douala: { lat: 4.0511, lng: 9.7679 },
+      buea: { lat: 4.156, lng: 9.2413 }, kribi: { lat: 2.9355, lng: 9.9079 },
+      limbe: { lat: 4.0205, lng: 9.1932 }, bafoussam: { lat: 5.4781, lng: 10.4174 },
+      garoua: { lat: 9.3014, lng: 13.3977 }, bertoua: { lat: 4.5773, lng: 13.6846 },
+    };
+    const key = ville.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const base = cities[key] || { lat: 3.848, lng: 11.5021 };
+    return base;
+  }
+
+  private cityFallback(ville: string, seed: string) {
+    const base = this.cityCoordinates(ville);
+    let hash = 0;
+    for (const char of seed) hash = (hash * 31 + char.charCodeAt(0)) | 0;
+    const latOffset = (((hash % 1000) / 1000) - 0.5) * 0.06;
+    const lngOffset = ((((hash >> 8) % 1000) / 1000) - 0.5) * 0.06;
+    return { latitude: base.lat + latOffset, longitude: base.lng + lngOffset };
+  }
+
   async findAll(query: {
     page?: number;
     limit?: number;
@@ -15,6 +36,7 @@ export class PlansService {
     userId?: string;
     favoritedBy?: string;
     boostedBy?: string;
+    search?: string;
   }) {
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 20;
@@ -23,10 +45,21 @@ export class PlansService {
     const where: any = {};
 
     if (query.categoryId) {
-      where.categories = { some: { id: query.categoryId } };
+      where.categories = { some: { OR: [{ id: query.categoryId }, { slug: query.categoryId }] } };
     }
     if (query.ville) {
       where.ville = { contains: query.ville, mode: 'insensitive' };
+    }
+    if (query.search) {
+      where.OR = [
+        { titre: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+        { ville: { contains: query.search, mode: 'insensitive' } },
+        { categories: { some: { OR: [
+          { nomFr: { contains: query.search, mode: 'insensitive' } },
+          { nomEn: { contains: query.search, mode: 'insensitive' } },
+        ] } } },
+      ];
     }
 
     // Plans créés par un utilisateur spécifique (profil)
@@ -77,11 +110,18 @@ export class PlansService {
       throw new BadRequestException('Un plan ne peut pas avoir à la fois des images et une vidéo');
     }
 
+    const fallback = dto.latitude === undefined || dto.longitude === undefined
+      ? this.cityFallback(dto.ville, `${dto.titre}:${dto.ville}`)
+      : null;
+
     return this.prisma.plan.create({
       data: {
         titre: dto.titre,
         description: dto.description,
         ville: dto.ville,
+        latitude: dto.latitude ?? fallback?.latitude,
+        longitude: dto.longitude ?? fallback?.longitude,
+        locationSource: dto.latitude !== undefined && dto.longitude !== undefined ? 'GPS' : 'CITY',
         images: dto.images || [],
         videoUrl: dto.videoUrl || null,
         userId: user.id,
@@ -131,6 +171,9 @@ export class PlansService {
       ville: dto.ville,
       images: dto.images,
       videoUrl: dto.videoUrl,
+      latitude: dto.latitude,
+      longitude: dto.longitude,
+      locationSource: dto.latitude !== undefined && dto.longitude !== undefined ? 'GPS' : undefined,
     };
 
     if (dto.categoryIds) {
@@ -159,5 +202,16 @@ export class PlansService {
 
     await this.prisma.plan.delete({ where: { id } });
     return { success: true, message: 'Plan supprimé avec succès' };
+  }
+
+  async mapSearch(query: { q?: string; ville?: string; categoryId?: string; page?: number; limit?: number }) {
+    const result = await this.findAll({
+      page: query.page,
+      limit: query.limit || 100,
+      ville: query.ville,
+      categoryId: query.categoryId,
+      search: query.q,
+    });
+    return { ...result, plans: result.data };
   }
 }
