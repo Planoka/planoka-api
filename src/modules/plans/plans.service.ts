@@ -103,7 +103,7 @@ export class PlansService {
   }
 
   async create(clerkId: string, dto: CreatePlanDto) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } });
+    const user = await this.prisma.findUserByIdOrClerkId(clerkId);
     if (!user) throw new NotFoundException('Utilisateur introuvable');
 
     if (dto.images && dto.images.length > 0 && dto.videoUrl) {
@@ -151,7 +151,7 @@ export class PlansService {
   }
 
   async update(id: string, clerkId: string, dto: UpdatePlanDto) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } });
+    const user = await this.prisma.findUserByIdOrClerkId(clerkId);
     if (!user) throw new NotFoundException('Utilisateur introuvable');
 
     const plan = await this.prisma.plan.findUnique({ where: { id } });
@@ -190,7 +190,7 @@ export class PlansService {
   }
 
   async remove(id: string, clerkId: string) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } });
+    const user = await this.prisma.findUserByIdOrClerkId(clerkId);
     if (!user) throw new NotFoundException('Utilisateur introuvable');
 
     const plan = await this.prisma.plan.findUnique({ where: { id } });

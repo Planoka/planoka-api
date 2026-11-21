@@ -4,7 +4,7 @@ export class CreateCommentDto {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   @IsString()
   @IsNotEmpty()
-  contenu: string;
+  contenu!: string;
 
   @IsUUID()
   @IsOptional()

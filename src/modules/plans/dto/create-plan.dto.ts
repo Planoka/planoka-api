@@ -4,15 +4,15 @@ import { LocationSource } from '@prisma/client';
 export class CreatePlanDto {
   @IsString()
   @IsNotEmpty()
-  titre: string;
+  titre!: string;
 
   @IsString()
   @IsNotEmpty()
-  description: string;
+  description!: string;
 
   @IsString()
   @IsNotEmpty()
-  ville: string;
+  ville!: string;
 
   @IsOptional()
   @IsNumber()
@@ -44,5 +44,5 @@ export class CreatePlanDto {
   @IsArray()
   @IsUUID(undefined, { each: true })
   @IsNotEmpty()
-  categoryIds: string[];
+  categoryIds!: string[];
 }

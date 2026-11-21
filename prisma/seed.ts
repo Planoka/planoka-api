@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -25,7 +26,39 @@ async function main() {
     console.log(`  ✅ ${cat.nomFr}`);
   }
 
-  console.log('\n✨ Seed terminé ! Les 8 catégories sont disponibles.');
+  // Seeding du compte administrateur initial (si inexistant)
+  console.log('\n👑 Seeding du compte administrateur...');
+  const adminEmail = (process.env.ADMIN_DEFAULT_EMAIL || 'admin@planoka.com').toLowerCase().trim();
+  const adminPassword = process.env.ADMIN_DEFAULT_PASSWORD || 'AdminPlanoka2025!';
+
+  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
+
+  if (!existingAdmin) {
+    const passwordHash = await bcrypt.hash(adminPassword, 12);
+    await prisma.user.create({
+      data: {
+        nom: 'Administrateur Principal',
+        email: adminEmail,
+        passwordHash,
+        role: 'ADMIN',
+        ville: 'Paris',
+      },
+    });
+    console.log(`  ✅ Compte Admin créé: ${adminEmail}`);
+  } else {
+    // S'assurer qu'il a bien le rôle ADMIN et un passwordHash
+    if (existingAdmin.role !== 'ADMIN') {
+      await prisma.user.update({
+        where: { id: existingAdmin.id },
+        data: { role: 'ADMIN' },
+      });
+      console.log(`  ✅ Rôle ADMIN rétabli pour: ${adminEmail}`);
+    } else {
+      console.log(`  ℹ️ Compte Admin déjà existant: ${adminEmail}`);
+    }
+  }
+
+  console.log('\n✨ Seed terminé avec succès !');
 }
 
 main()

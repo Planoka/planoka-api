@@ -11,7 +11,7 @@ export class CommentsService {
   ) {}
 
   async create(planId: string, clerkId: string, dto: CreateCommentDto) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } });
+    const user = await this.prisma.findUserByIdOrClerkId(clerkId);
     if (!user) throw new NotFoundException('Utilisateur introuvable');
 
     const plan = await this.prisma.plan.findUnique({
@@ -81,7 +81,7 @@ export class CommentsService {
   }
 
   async remove(commentId: string, clerkId: string) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } });
+    const user = await this.prisma.findUserByIdOrClerkId(clerkId);
     if (!user) throw new NotFoundException('Utilisateur introuvable');
 
     const comment = await this.prisma.comment.findUnique({ where: { id: commentId } });

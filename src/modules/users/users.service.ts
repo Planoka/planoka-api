@@ -7,8 +7,8 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async getMyProfile(clerkId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: { OR: [{ clerkId }, { id: clerkId }] },
       include: {
         interests: { include: { categorie: true } },
         _count: {
@@ -27,7 +27,7 @@ export class UsersService {
   }
 
   async updateProfile(clerkId: string, dto: UpdateUserDto) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } });
+    const user = await this.prisma.findUserByIdOrClerkId(clerkId);
     if (!user) throw new NotFoundException('Utilisateur introuvable');
 
     return this.prisma.user.update({
@@ -61,7 +61,7 @@ export class UsersService {
     let isOwnProfile = false;
 
     if (viewerClerkId) {
-      const viewer = await this.prisma.user.findUnique({ where: { clerkId: viewerClerkId } });
+      const viewer = await this.prisma.findUserByIdOrClerkId(viewerClerkId);
       if (viewer) {
         isOwnProfile = viewer.id === userId;
         if (!isOwnProfile) {
@@ -84,7 +84,7 @@ export class UsersService {
   }
 
   async getMyFavorites(clerkId: string) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } });
+    const user = await this.prisma.findUserByIdOrClerkId(clerkId);
     if (!user) throw new NotFoundException('Utilisateur introuvable');
 
     return this.prisma.favorite.findMany({
@@ -102,7 +102,7 @@ export class UsersService {
   }
 
   async setMyInterests(clerkId: string, categoryIds: string[]) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } });
+    const user = await this.prisma.findUserByIdOrClerkId(clerkId);
     if (!user) throw new NotFoundException('Utilisateur introuvable');
 
     await this.prisma.userInterest.deleteMany({ where: { userId: user.id } });
@@ -118,7 +118,7 @@ export class UsersService {
 
   // ── Follow / Unfollow ─────────────────────────────────────────
   async toggleFollow(viewerClerkId: string, targetUserId: string) {
-    const viewer = await this.prisma.user.findUnique({ where: { clerkId: viewerClerkId } });
+    const viewer = await this.prisma.findUserByIdOrClerkId(viewerClerkId);
     if (!viewer) throw new NotFoundException('Utilisateur introuvable');
 
     const target = await this.prisma.user.findUnique({ where: { id: targetUserId } });

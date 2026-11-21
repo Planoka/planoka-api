@@ -13,7 +13,7 @@ export class InteractionsService {
    * Ajoute ou retire un plan des favoris (Toggle)
    */
   async toggleFavorite(planId: string, clerkId: string) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } });
+    const user = await this.prisma.findUserByIdOrClerkId(clerkId);
     if (!user) throw new NotFoundException('Utilisateur introuvable');
 
     const plan = await this.prisma.plan.findUnique({ where: { id: planId } });
@@ -41,7 +41,7 @@ export class InteractionsService {
    * Met à jour le compteur boostsCount dans la table Plan pour les perfs de tri
    */
   async toggleBoost(planId: string, clerkId: string) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } });
+    const user = await this.prisma.findUserByIdOrClerkId(clerkId);
     if (!user) throw new NotFoundException('Utilisateur introuvable');
 
     const plan = await this.prisma.plan.findUnique({

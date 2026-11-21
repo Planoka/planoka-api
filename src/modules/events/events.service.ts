@@ -7,7 +7,7 @@ export class EventsService {
   constructor(private prisma: PrismaService) {}
 
   async create(clerkId: string, dto: CreateEventDto) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } });
+    const user = await this.prisma.findUserByIdOrClerkId(clerkId);
     if (!user) throw new NotFoundException('Utilisateur introuvable');
 
     return this.prisma.userEvent.create({

@@ -64,18 +64,19 @@ enum ReportStatus {
 // MODELS
 // ═══════════════════════════════════════
 model User {
-  id        String   @id @default(uuid())
-  clerkId   String   @unique @map("clerk_id")
-  nom       String   @db.VarChar(80)
-  email     String   @unique @db.VarChar(255)
-  avatarUrl String?  @map("avatar_url")
-  role      Role     @default(USER)
-  langue    Langue   @default(FR)
-  theme     Theme    @default(SYSTEM)
-  ville     String?  @db.VarChar(80)
-  pushToken String?  @map("push_token")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  clerkId      String?  @unique @map("clerk_id")
+  passwordHash String?  @map("password_hash")
+  nom          String   @db.VarChar(80)
+  email        String   @unique @db.VarChar(255)
+  avatarUrl    String?  @map("avatar_url")
+  role         Role     @default(USER)
+  langue       Langue   @default(FR)
+  theme        Theme    @default(SYSTEM)
+  ville        String?  @db.VarChar(80)
+  pushToken    String?  @map("push_token")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   plans     Plan[]
   boosts    Boost[]

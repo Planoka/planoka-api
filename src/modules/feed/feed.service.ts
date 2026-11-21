@@ -22,8 +22,8 @@ export class FeedService {
     if (cached) return cached;
 
     // 1. Récupérer l'utilisateur et ses intérêts
-    const user = await this.prisma.user.findUnique({
-      where: { clerkId },
+    const user = await this.prisma.user.findFirst({
+      where: { OR: [{ clerkId }, { id: clerkId }] },
       include: { interests: true },
     });
 

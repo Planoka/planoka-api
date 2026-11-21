@@ -7,7 +7,7 @@ export class ReportsService {
   constructor(private prisma: PrismaService) {}
 
   async create(planId: string, clerkId: string, dto: CreateReportDto) {
-    const user = await this.prisma.user.findUnique({ where: { clerkId } });
+    const user = await this.prisma.findUserByIdOrClerkId(clerkId);
     if (!user) throw new NotFoundException('Utilisateur introuvable');
 
     const plan = await this.prisma.plan.findUnique({ where: { id: planId } });
